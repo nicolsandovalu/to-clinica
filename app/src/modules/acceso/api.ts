@@ -1,11 +1,19 @@
 /**
- * Cliente HTTP del backend para el módulo de acceso.
+ * Cliente HTTP del backend (acceso, sincronización y restauración).
  * Autenticación solo por cabecera `Authorization: Token ...` (AUT-06).
  * Ningún error incluye el cuerpo de la respuesta ni datos de la usuaria.
  */
-import type { InstantaneaServidor } from '../../data/tipos';
+import {
+  ESTADOS_RESULTADO_SYNC,
+  InstantaneaServidor,
+  OperacionColaSync,
+  ResultadoOperacionSync,
+} from '../../data/tipos';
 
 export const MENSAJE_LOGIN_GENERICO = 'Correo o contraseña incorrectos.';
+
+/** Sincronización y restauración toleran el arranque en frío del servidor (Render). */
+export const TIEMPO_MAXIMO_SYNC_MS = 120_000;
 
 export type TipoErrorApi = 'credenciales' | 'limite' | 'no_autorizado' | 'red' | 'servidor';
 
@@ -36,8 +44,16 @@ export interface ClienteApi {
   login(email: string, password: string): Promise<RespuestaLogin>;
   /** `POST /api/cuentas/logout/`: revoca el token en el servidor. */
   logout(token: string): Promise<void>;
-  /** `GET /api/clinica/restauracion/`: copia completa de los datos de la usuaria. */
+  /** `GET /api/clinica/restaurar/`: copia completa de los datos de la usuaria. */
   descargarInstantanea(token: string): Promise<InstantaneaServidor>;
+  /**
+   * `POST /api/clinica/sincronizar/`: envía un lote del outbox y devuelve un
+   * resultado por operación, en el mismo orden.
+   */
+  enviarOperaciones(
+    token: string,
+    operaciones: readonly OperacionColaSync[],
+  ): Promise<ResultadoOperacionSync[]>;
 }
 
 type Fetch = (url: string, opciones: RequestInit) => Promise<Response>;
@@ -66,10 +82,10 @@ export function crearClienteApi(opciones: OpcionesClienteApi): ClienteApi {
   async function pedir(
     metodo: 'GET' | 'POST',
     ruta: string,
-    extras: { token?: string; cuerpo?: unknown },
+    extras: { token?: string; cuerpo?: unknown; tiempoMaximoMs?: number },
   ): Promise<Response> {
     const control = new AbortController();
-    const temporizador = setTimeout(() => control.abort(), tiempoMaximoMs);
+    const temporizador = setTimeout(() => control.abort(), extras.tiempoMaximoMs ?? tiempoMaximoMs);
     const headers: Record<string, string> = { Accept: 'application/json' };
     if (extras.token !== undefined) headers.Authorization = `Token ${extras.token}`;
     if (extras.cuerpo !== undefined) headers['Content-Type'] = 'application/json';
@@ -135,10 +151,49 @@ export function crearClienteApi(opciones: OpcionesClienteApi): ClienteApi {
     },
 
     async descargarInstantanea(token) {
-      const respuesta = await pedir('GET', '/api/clinica/restauracion/', { token });
+      const respuesta = await pedir('GET', '/api/clinica/restaurar/', {
+        token,
+        tiempoMaximoMs: TIEMPO_MAXIMO_SYNC_MS,
+      });
       if (!respuesta.ok) throw errorGenerico(respuesta);
       // El repositorio valida la estructura antes de guardar nada.
       return (await leerJson(respuesta)) as InstantaneaServidor;
+    },
+
+    async enviarOperaciones(token, operaciones) {
+      const respuesta = await pedir('POST', '/api/clinica/sincronizar/', {
+        token,
+        // `intentos` es un contador local: no viaja al servidor.
+        cuerpo: { operaciones: operaciones.map(({ intentos: _local, ...operacion }) => operacion) },
+        tiempoMaximoMs: TIEMPO_MAXIMO_SYNC_MS,
+      });
+      if (!respuesta.ok) throw errorGenerico(respuesta);
+      const cuerpo = await leerJson(respuesta);
+      const resultados = esObjeto(cuerpo) ? cuerpo.resultados : undefined;
+      if (!Array.isArray(resultados) || resultados.length !== operaciones.length) {
+        throw new ErrorApi('servidor', respuesta.status);
+      }
+      return resultados.map((resultado: unknown, posicion): ResultadoOperacionSync => {
+        const estado = esObjeto(resultado)
+          ? ESTADOS_RESULTADO_SYNC.find((valor) => valor === resultado.estado)
+          : undefined;
+        const operacion = operaciones[posicion];
+        // Cada resultado debe corresponder a la operación enviada en su posición.
+        if (
+          !esObjeto(resultado) ||
+          estado === undefined ||
+          operacion === undefined ||
+          resultado.op_id !== operacion.op_id
+        ) {
+          throw new ErrorApi('servidor', respuesta.status);
+        }
+        const codigo = resultado.codigo_http;
+        return {
+          op_id: operacion.op_id,
+          estado,
+          codigo_http: typeof codigo === 'number' ? codigo : estado === 'rechazada' ? 400 : 200,
+        };
+      });
     },
   };
 }

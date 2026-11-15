@@ -1,7 +1,11 @@
 /** Dobles de prueba para el módulo de acceso. */
 import { AlmacenSeguroMemoria } from '../../src/data/almacenSeguro';
 import type { IRepositorioClinico } from '../../src/data/repositorio';
-import type { InstantaneaServidor } from '../../src/data/tipos';
+import type {
+  InstantaneaServidor,
+  OperacionColaSync,
+  ResultadoOperacionSync,
+} from '../../src/data/tipos';
 import { ClienteApi, ErrorApi } from '../../src/modules/acceso/api';
 import type { AutenticadorLocal, ResultadoAutenticacion } from '../../src/modules/acceso/autenticacionLocal';
 import { GestorAcceso } from '../../src/modules/acceso/gestorAcceso';
@@ -65,6 +69,13 @@ export class ApiFalsa implements ClienteApi {
     this.llamadas.push('restauracion');
     if (this.errorRestauracion) throw this.errorRestauracion;
     return this.instantanea;
+  }
+
+  async enviarOperaciones(_token: string, operaciones: readonly OperacionColaSync[]) {
+    this.llamadas.push('sincronizar');
+    return operaciones.map(
+      (op): ResultadoOperacionSync => ({ op_id: op.op_id, estado: 'aplicada', codigo_http: 200 }),
+    );
   }
 }
 

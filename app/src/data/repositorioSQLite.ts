@@ -14,6 +14,7 @@ import {
   construirRegistroSesion,
   ordenarCola,
   validarInstantanea,
+  validarLimiteEventos,
 } from './reglas';
 import { DependenciasRepositorio, ErrorRepositorio, IRepositorioClinico } from './repositorio';
 import { ORDEN_ENTIDADES_SYNC } from './tipos';
@@ -578,6 +579,22 @@ export class RepositorioSQLite implements IRepositorioClinico {
       ...(JSON.parse(fila.documento) as Omit<EventoSync, 'evento_id'>),
       evento_id: fila.evento_id,
     }));
+  }
+
+  limpiarEventosSync(conservar: number): Promise<number> {
+    return this.transaccion(async (tx) => {
+      const limite = validarLimiteEventos(conservar);
+      const contar = async (): Promise<number> =>
+        (await tx.getFirstAsync<{ total: number }>('SELECT count(*) AS total FROM evento_sync', []))
+          ?.total ?? 0;
+      const antes = await contar();
+      await tx.runAsync(
+        `DELETE FROM evento_sync
+          WHERE rowid NOT IN (SELECT rowid FROM evento_sync ORDER BY rowid DESC LIMIT ?)`,
+        [limite],
+      );
+      return antes - (await contar());
+    });
   }
 
   restaurarDesdeServidor(instantanea: InstantaneaServidor): Promise<void> {

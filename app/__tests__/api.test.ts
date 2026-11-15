@@ -84,7 +84,7 @@ describe('cliente de API', () => {
     const restauracion = crear(respuesta(200, instantanea));
     expect(await restauracion.api.descargarInstantanea('abc')).toEqual(instantanea);
     const [urlRestauracion, initRestauracion] = restauracion.fetchFalso.mock.calls[0] ?? [];
-    expect(urlRestauracion).toBe('https://api.ejemplo.cl/api/clinica/restauracion/');
+    expect(urlRestauracion).toBe('https://api.ejemplo.cl/api/clinica/restaurar/');
     expect(initRestauracion).toMatchObject({ method: 'GET', headers: { Authorization: 'Token abc' } });
   });
 

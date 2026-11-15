@@ -101,6 +101,11 @@ export interface IRepositorioClinico {
 
   registrarEventoSync(evento: NuevoEventoSync): Promise<EventoSync>;
   listarEventosSync(): Promise<EventoSync[]>;
+  /**
+   * Conserva solo los `conservar` eventos más recientes y devuelve cuántos eliminó.
+   * `evento_sync` es un diario técnico sin contenido clínico, por eso sí admite borrado.
+   */
+  limpiarEventosSync(conservar: number): Promise<number>;
 
   /**
    * Carga la copia del servidor en un repositorio vacío (dispositivo nuevo).

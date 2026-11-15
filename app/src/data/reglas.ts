@@ -303,6 +303,14 @@ export function ordenarCola(cola: readonly OperacionColaSync[]): OperacionColaSy
     .map(({ operacion }) => operacion);
 }
 
+/** Cantidad de eventos de `evento_sync` a conservar: entero mayor o igual a cero. */
+export function validarLimiteEventos(conservar: number): number {
+  if (!Number.isInteger(conservar) || conservar < 0) {
+    throw invalido('conservar', 'debe ser un entero mayor o igual a cero');
+  }
+  return conservar;
+}
+
 // ---------- Restauración ----------
 
 export interface InstantaneaValidada {

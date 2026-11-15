@@ -12,6 +12,7 @@ import {
   construirRegistroSesion,
   ordenarCola,
   validarInstantanea,
+  validarLimiteEventos,
 } from './reglas';
 import { DependenciasRepositorio, ErrorRepositorio, IRepositorioClinico } from './repositorio';
 import type {
@@ -354,6 +355,15 @@ export class RepositorioMemoria implements IRepositorioClinico {
 
   async listarEventosSync(): Promise<EventoSync[]> {
     return [...this.estado.eventos];
+  }
+
+  limpiarEventosSync(conservar: number): Promise<number> {
+    return this.transaccion((borrador) => {
+      const limite = validarLimiteEventos(conservar);
+      const total = borrador.eventos.length;
+      borrador.eventos = limite === 0 ? [] : borrador.eventos.slice(-limite);
+      return total - borrador.eventos.length;
+    });
   }
 
   restaurarDesdeServidor(instantanea: InstantaneaServidor): Promise<void> {

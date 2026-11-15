@@ -151,6 +151,20 @@ export type CambiosRegistroSesion = Partial<
 
 export type NuevoEventoSync = Omit<EventoSync, 'evento_id' | 'ocurrido_en'>;
 
+/**
+ * Resultado por operación de `POST /api/clinica/sincronizar/`.
+ * `aplicada`, `duplicada` y `conflicto` (LWW: ganó el servidor) son definitivos;
+ * una `rechazada` permanece en la cola local.
+ */
+export const ESTADOS_RESULTADO_SYNC = ['aplicada', 'duplicada', 'conflicto', 'rechazada'] as const;
+export type EstadoResultadoSync = (typeof ESTADOS_RESULTADO_SYNC)[number];
+
+export interface ResultadoOperacionSync {
+  readonly op_id: string | null;
+  readonly estado: EstadoResultadoSync;
+  readonly codigo_http: number;
+}
+
 /** Copia completa de los datos de la usuaria entregada por el servidor al restaurar. */
 export interface InstantaneaServidor {
   readonly apoderados: readonly Omit<Apoderado, 'estado_sync'>[];
