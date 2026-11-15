@@ -1,5 +1,5 @@
 /** Historial — sesiones activas del paciente (más reciente primero) con edición. */
-import React, { useCallback, useEffect, useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { Text } from 'react-native';
 
 import type { IRepositorioClinico } from '../data/repositorio';
@@ -76,24 +76,29 @@ export function Historial({ repositorio, pacienteId, alVolver }: PropsHistorial)
   const [editando, setEditando] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
 
-  const cargar = useCallback(async () => {
-    try {
-      setEntradas(await listarHistorial(repositorio, pacienteId));
-      setError(null);
-    } catch {
-      setError(MENSAJE_ERROR_HISTORIAL);
-    }
-  }, [repositorio, pacienteId]);
+  const [recarga, setRecarga] = useState(0);
 
   useEffect(() => {
-    void cargar();
-  }, [cargar]);
+    let activo = true;
+    listarHistorial(repositorio, pacienteId)
+      .then((lista) => {
+        if (!activo) return;
+        setEntradas(lista);
+        setError(null);
+      })
+      .catch(() => {
+        if (activo) setError(MENSAJE_ERROR_HISTORIAL);
+      });
+    return () => {
+      activo = false;
+    };
+  }, [repositorio, pacienteId, recarga]);
 
   const guardar = async (registroId: string, campos: CamposSesion) => {
     try {
       await editarSesionHistorica(repositorio, registroId, campos);
       setEditando(null);
-      await cargar();
+      setRecarga((n) => n + 1);
     } catch {
       setError(MENSAJE_ERROR_HISTORIAL);
     }

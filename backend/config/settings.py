@@ -17,6 +17,9 @@ if not SECRET_KEY:
     raise ImproperlyConfigured("Falta la variable de entorno DJANGO_SECRET_KEY.")
 
 ALLOWED_HOSTS = [h for h in os.environ.get("DJANGO_ALLOWED_HOSTS", "").split(",") if h]
+# Render publica el host del servicio en esta variable.
+if os.environ.get("RENDER_EXTERNAL_HOSTNAME"):
+    ALLOWED_HOSTS.append(os.environ["RENDER_EXTERNAL_HOSTNAME"])
 
 INSTALLED_APPS = [
     "django.contrib.admin",
@@ -81,6 +84,11 @@ DATABASES = {"default": _base_de_datos()}
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 
 AUTH_USER_MODEL = "cuentas.Usuaria"
+# AUT-01: complejidad exigida a toda contraseña nueva (createsuperuser, admin, etc.).
+AUTH_PASSWORD_VALIDATORS = [
+    {"NAME": "cuentas.validators.ValidadorComplejidad"},
+    {"NAME": "django.contrib.auth.password_validation.CommonPasswordValidator"},
+]
 PASSWORD_HASHERS = ["django.contrib.auth.hashers.PBKDF2PasswordHasher"]
 
 REST_FRAMEWORK = {
@@ -90,7 +98,10 @@ REST_FRAMEWORK = {
     "DEFAULT_PERMISSION_CLASSES": ["rest_framework.permissions.IsAuthenticated"],
     "DEFAULT_RENDERER_CLASSES": ["rest_framework.renderers.JSONRenderer"],
     "DEFAULT_PARSER_CLASSES": ["rest_framework.parsers.JSONParser"],
+    # AUT-02: 5 intentos de login por minuto.
     "DEFAULT_THROTTLE_RATES": {"login": "5/min"},
+    # Saltos de proxy de confianza (Render) para identificar la IP real en el límite de tasa.
+    "NUM_PROXIES": int(os.environ.get("DJANGO_NUM_PROXIES", "1")),
 }
 
 LANGUAGE_CODE = "es-cl"
@@ -100,6 +111,8 @@ USE_TZ = True
 
 # CS-08
 SECURE_SSL_REDIRECT = not DEBUG
+# El health check del despliegue puede llegar por HTTP interno.
+SECURE_REDIRECT_EXEMPT = [r"^salud/$"]
 SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")
 SESSION_COOKIE_SECURE = not DEBUG
 CSRF_COOKIE_SECURE = not DEBUG

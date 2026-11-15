@@ -1,5 +1,7 @@
 Django>=6.0,<7
 djangorestframework>=3.16
 psycopg[binary]>=3.2
+cryptography>=44
+gunicorn>=23
 coverage>=7
 flake8>=7

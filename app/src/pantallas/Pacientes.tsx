@@ -1,5 +1,5 @@
 /** E3 — Pacientes: lista activa con buscador y ficha con resumen de la última sesión. */
-import React, { useCallback, useEffect, useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { Text } from 'react-native';
 
 import type { IRepositorioClinico } from '../data/repositorio';
@@ -93,23 +93,22 @@ export function Pacientes(props: PropsPacientes) {
   const [seleccionado, setSeleccionado] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
 
-  const cargar = useCallback(async () => {
-    try {
-      const [listaPacientes, listaApoderados] = await Promise.all([
-        repositorio.listarPacientes(),
-        repositorio.listarApoderados(),
-      ]);
-      setPacientes(listaPacientes);
-      setApoderados(listaApoderados);
-      setError(null);
-    } catch {
-      setError(MENSAJE_ERROR_PACIENTES);
-    }
-  }, [repositorio]);
-
   useEffect(() => {
-    void cargar();
-  }, [cargar]);
+    let activo = true;
+    Promise.all([repositorio.listarPacientes(), repositorio.listarApoderados()])
+      .then(([listaPacientes, listaApoderados]) => {
+        if (!activo) return;
+        setPacientes(listaPacientes);
+        setApoderados(listaApoderados);
+        setError(null);
+      })
+      .catch(() => {
+        if (activo) setError(MENSAJE_ERROR_PACIENTES);
+      });
+    return () => {
+      activo = false;
+    };
+  }, [repositorio]);
 
   const paciente = pacientes.find((p) => p.id === seleccionado);
   if (paciente !== undefined && !paciente.archivado) {

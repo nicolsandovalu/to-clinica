@@ -1,5 +1,5 @@
 /** E2 — Agenda: citas del día, estado editable en 1 toque, registro de sesión y confirmación por WhatsApp. */
-import React, { useCallback, useEffect, useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { Linking, Pressable, StyleSheet, Text, View } from 'react-native';
 
 import type { IRepositorioClinico } from '../data/repositorio';
@@ -10,7 +10,6 @@ import {
   formatearFechaHoraCita,
 } from '../modules/pacientes-agenda/whatsapp';
 import {
-  BannerConexion,
   BotonPrimario,
   BotonSecundario,
   CHIPS_ESTADO_CITA,
@@ -25,7 +24,6 @@ export const MENSAJE_ERROR_AGENDA = 'No se pudo actualizar la agenda. Inténtalo
 
 export interface PropsAgenda {
   readonly repositorio: IRepositorioClinico;
-  readonly conectado: boolean;
   /** Navega a E4 (Registro de sesión) para la cita indicada. */
   readonly alRegistrarSesion: (citaId: string) => void;
   /** Día a mostrar; por defecto hoy. */
@@ -69,33 +67,31 @@ function SelectorEstado({
   );
 }
 
-export function Agenda({ repositorio, conectado, alRegistrarSesion, dia }: PropsAgenda) {
+export function Agenda({ repositorio, alRegistrarSesion, dia }: PropsAgenda) {
   const [citas, setCitas] = useState<CitaConPaciente[]>([]);
-  const [pendientes, setPendientes] = useState(0);
   const [error, setError] = useState<string | null>(null);
-
-  const cargar = useCallback(async () => {
-    try {
-      const [lista, cola] = await Promise.all([
-        listarCitasDelDia(repositorio, dia),
-        repositorio.listarColaSync(),
-      ]);
-      setCitas(lista);
-      setPendientes(cola.length);
-      setError(null);
-    } catch {
-      setError(MENSAJE_ERROR_AGENDA);
-    }
-  }, [repositorio, dia]);
+  const [recarga, setRecarga] = useState(0);
 
   useEffect(() => {
-    void cargar();
-  }, [cargar]);
+    let activo = true;
+    listarCitasDelDia(repositorio, dia)
+      .then((lista) => {
+        if (!activo) return;
+        setCitas(lista);
+        setError(null);
+      })
+      .catch(() => {
+        if (activo) setError(MENSAJE_ERROR_AGENDA);
+      });
+    return () => {
+      activo = false;
+    };
+  }, [repositorio, dia, recarga]);
 
   const cambiarEstado = async (citaId: string, estado: EstadoCita) => {
     try {
       await repositorio.actualizarCita(citaId, { estado });
-      await cargar();
+      setRecarga((n) => n + 1);
     } catch {
       setError(MENSAJE_ERROR_AGENDA);
     }
@@ -117,7 +113,6 @@ export function Agenda({ repositorio, conectado, alRegistrarSesion, dia }: Props
 
   return (
     <Pantalla testID="pantalla-agenda">
-      <BannerConexion conectado={conectado} pendientes={pendientes} />
       <Titulo>Agenda de hoy</Titulo>
       <MensajeError mensaje={error} />
       {citas.length === 0 ? <Parrafo>No hay citas para hoy.</Parrafo> : null}

@@ -2,32 +2,59 @@ import { StatusBar } from 'expo-status-bar';
 import React, { useState } from 'react';
 
 import { almacenSeguroExpo, crearRepositorioSQLite } from './src/data/fabrica';
-import { CompuertaAcceso, ProveedorAcceso } from './src/modules/acceso/ContextoAcceso';
+import type { IRepositorioClinico } from './src/data/repositorio';
+import { CompuertaAcceso, ProveedorAcceso, useAcceso } from './src/modules/acceso/ContextoAcceso';
 import { crearClienteApi } from './src/modules/acceso/api';
 import { autenticadorExpo } from './src/modules/acceso/autenticacionLocal';
 import { GestorAcceso } from './src/modules/acceso/gestorAcceso';
-import { E2Agenda } from './src/pantallas/E2Agenda';
+import type { MotorSync } from './src/modules/sincronizacion/motorSync';
+import { crearMotorSync } from './src/modules/sincronizacion/useSincronizacion';
+import { Principal } from './src/pantallas/Principal';
 
-function crearGestor(): GestorAcceso {
-  return new GestorAcceso({
-    repositorio: crearRepositorioSQLite(),
+interface Servicios {
+  readonly repositorio: IRepositorioClinico;
+  readonly gestor: GestorAcceso;
+  readonly motor: MotorSync;
+}
+
+function crearServicios(): Servicios {
+  const repositorio = crearRepositorioSQLite();
+  const api = crearClienteApi({
+    // Definir EXPO_PUBLIC_API_URL en .env (ver .env.example). HTTP solo se admite en desarrollo.
+    urlBase: process.env.EXPO_PUBLIC_API_URL ?? '',
+    permitirHttp: __DEV__,
+  });
+  const gestor = new GestorAcceso({
+    repositorio,
     almacenSeguro: almacenSeguroExpo,
     autenticador: autenticadorExpo,
-    api: crearClienteApi({
-      // Definir EXPO_PUBLIC_API_URL en .env (ver .env.example). HTTP solo se admite en desarrollo.
-      urlBase: process.env.EXPO_PUBLIC_API_URL ?? '',
-      permitirHttp: __DEV__,
-    }),
+    api,
   });
+  const motor = crearMotorSync({ repositorio, api, almacenSeguro: almacenSeguroExpo });
+  return { repositorio, gestor, motor };
+}
+
+/** Solo se monta con la app desbloqueada (ver `CompuertaAcceso`). */
+function ContenidoDesbloqueado({ servicios }: { servicios: Servicios }) {
+  const { estado } = useAcceso();
+  if (estado.sesion === null) return null;
+  return (
+    <Principal
+      repositorio={servicios.repositorio}
+      motor={servicios.motor}
+      gestor={servicios.gestor}
+      sesion={estado.sesion}
+    />
+  );
 }
 
 export default function App() {
-  const [gestor] = useState(crearGestor);
+  const [servicios] = useState(crearServicios);
   return (
-    <ProveedorAcceso gestor={gestor}>
+    <ProveedorAcceso gestor={servicios.gestor}>
       <StatusBar style="dark" />
       <CompuertaAcceso>
-        <E2Agenda />
+        <ContenidoDesbloqueado servicios={servicios} />
       </CompuertaAcceso>
     </ProveedorAcceso>
   );
