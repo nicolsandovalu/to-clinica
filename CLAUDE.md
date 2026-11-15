@@ -61,3 +61,7 @@
 - Python: 0 errores con `flake8` (max-line-length 100/120).
 - App: TypeScript estricto (`tsc --noEmit` sin errores) y 0 errores de `eslint`.
 - No dar por terminada ninguna tarea sin escribir y ejecutar sus pruebas unitarias/seguridad correspondientes (`manage.py test` y `npm test`).
+
+## 6. Reglas de Control de Versiones y Secretos (Git)
+- **Prohibido versionar secretos y datos locales:** Jamás agregar ni commitear archivos `.env`, `.env.*` (excepto `.env.example`), bases de datos locales (`*.sqlite3`, `*.db`), archivos de respaldo (`*.sql`, `*.enc`), claves (`*.pem`, `*.key`) ni carpetas `node_modules/` o `venv/`.
+- **Verificación antes de cada commit:** Antes de ejecutar `git add` o `git commit`, verificar siempre `git status` para confirmar que ningún archivo `.env` o artefacto sensible esté en el área de preparación. Si falta alguna exclusión, actualizar `.gitignore` de inmediato.
