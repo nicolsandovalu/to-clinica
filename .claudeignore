@@ -1,0 +1,9 @@
+node_modules/
+.expo/
+venv/
+.venv/
+__pycache__/
+coverage/
+dist/
+web-build/
+*.sqlite3

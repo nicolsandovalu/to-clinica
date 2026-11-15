@@ -1,0 +1,38 @@
+# Variables de entorno y secretos
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+
+# Bases de datos y respaldos locales
+*.sqlite3
+*.sqlite
+*.db
+*.sql
+*.enc
+
+# Python / Backend
+__pycache__/
+*.py[cod]
+venv/
+.venv/
+.coverage
+htmlcov/
+
+# Node / React Native / Expo
+node_modules/
+.expo/
+dist/
+web-build/
+
+# Sistema operativo
+.DS_Store
+Thumbs.db
+# pruebas
+coverage/
+
+# secretos locales
+.env
+.env.*
+!.env.example
