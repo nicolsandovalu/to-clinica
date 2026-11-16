@@ -1,3 +1,4 @@
+import Constants from 'expo-constants';
 import { AlmacenSeguro, CLAVES_ALMACEN } from './almacenSeguro';
 import { SENTENCIAS_ESQUEMA } from './esquema';
 import {
@@ -55,6 +56,8 @@ export interface ConexionSQL {
 
 export interface BaseDatosSQL extends ConexionSQL {
   withExclusiveTransactionAsync(tarea: (tx: ConexionSQL) => Promise<void>): Promise<void>;
+  /** Transacción sobre la conexión principal (ya con la clave SQLCipher aplicada). */
+  withTransactionAsync?(tarea: () => Promise<void>): Promise<void>;
   closeAsync(): Promise<void>;
 }
 
@@ -189,24 +192,43 @@ export class RepositorioSQLite implements IRepositorioClinico {
     const bd = await this.deps.abrirBaseDatos();
     try {
       // Debe ser la primera sentencia sobre la conexión. Clave en formato crudo de SQLCipher.
-      await bd.execAsync(`PRAGMA key = "x'${clave}'";`);
-      const cifrado = await bd.getFirstAsync<{ cipher_version: string | null }>(
-        'PRAGMA cipher_version;',
-        [],
-      );
-      if (!cifrado?.cipher_version) {
-        throw new ErrorRepositorio(
-          'cifrado_no_disponible',
-          'SQLCipher no está disponible: no se guardarán datos sin cifrar.',
-        );
-      }
+      // Solo en Expo Go (desarrollo) se tolera la ausencia de SQLCipher; en builds nativos
+      // y producción se mantiene el fallo cerrado.
+      const enExpoGo = Constants.executionEnvironment === 'storeClient';
+      let sqlcipherOmitido = false;
       try {
-        await bd.getFirstAsync('SELECT count(*) AS total FROM sqlite_master;', []);
-      } catch {
-        throw new ErrorRepositorio(
-          'cifrado_no_disponible',
-          'No se pudo abrir la base de datos local con la clave del dispositivo.',
+        await bd.execAsync(`PRAGMA key = "x'${clave}'";`);
+      } catch (errorClave) {
+        if (!enExpoGo) throw errorClave;
+        sqlcipherOmitido = true;
+      }
+      if (!sqlcipherOmitido) {
+        const cifrado = await bd.getFirstAsync<{ cipher_version: string | null }>(
+          'PRAGMA cipher_version;',
+          [],
         );
+        if (!cifrado?.cipher_version) {
+          if (!enExpoGo) {
+            throw new ErrorRepositorio(
+              'cifrado_no_disponible',
+              'SQLCipher no está disponible: no se guardarán datos sin cifrar.',
+            );
+          }
+          sqlcipherOmitido = true;
+        }
+      }
+      if (sqlcipherOmitido) {
+        // Sin datos clínicos en el mensaje (CS-07).
+        console.warn('Expo Go: SQLCipher no disponible, usando SQLite estándar (solo desarrollo).');
+      } else {
+        try {
+          await bd.getFirstAsync('SELECT count(*) AS total FROM sqlite_master;', []);
+        } catch {
+          throw new ErrorRepositorio(
+            'cifrado_no_disponible',
+            'No se pudo abrir la base de datos local con la clave del dispositivo.',
+          );
+        }
       }
       await bd.execAsync('PRAGMA foreign_keys = ON;');
       for (const sentencia of SENTENCIAS_ESQUEMA) {
@@ -234,9 +256,18 @@ export class RepositorioSQLite implements IRepositorioClinico {
 
   private async transaccion<T>(tarea: (tx: ConexionSQL) => Promise<T>): Promise<T> {
     let resultado: T | undefined;
-    await this.conexion().withExclusiveTransactionAsync(async (tx) => {
-      resultado = await tarea(tx);
-    });
+    const bd = this.conexion();
+    if (bd.withTransactionAsync) {
+      // La transacción exclusiva abre otra conexión sin `PRAGMA key` (SQLCipher) ni
+      // `foreign_keys`, y las escrituras fallan en Android. Se usa la conexión principal.
+      await bd.withTransactionAsync(async () => {
+        resultado = await tarea(bd);
+      });
+    } else {
+      await bd.withExclusiveTransactionAsync(async (tx) => {
+        resultado = await tarea(tx);
+      });
+    }
     return resultado as T;
   }
 
