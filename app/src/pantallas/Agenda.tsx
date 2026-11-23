@@ -28,6 +28,14 @@ export interface PropsAgenda {
   readonly alRegistrarSesion: (citaId: string) => void;
   /** Día a mostrar; por defecto hoy. */
   readonly dia?: Date;
+  /** Lleva a la lista de pacientes, desde donde se agendan las citas. */
+  readonly alIrAPacientes?: () => void;
+}
+
+/** Fecha larga en español, por ejemplo «lunes 23 de noviembre». */
+export function formatearDia(dia: Date): string {
+  const texto = dia.toLocaleDateString('es-CL', { weekday: 'long', day: 'numeric', month: 'long' });
+  return texto.charAt(0).toUpperCase() + texto.slice(1);
 }
 
 function horaLocal(fechaHora: string): string {
@@ -67,7 +75,7 @@ function SelectorEstado({
   );
 }
 
-export function Agenda({ repositorio, alRegistrarSesion, dia }: PropsAgenda) {
+export function Agenda({ repositorio, alRegistrarSesion, dia, alIrAPacientes }: PropsAgenda) {
   const [citas, setCitas] = useState<CitaConPaciente[]>([]);
   const [error, setError] = useState<string | null>(null);
   const [recarga, setRecarga] = useState(0);
@@ -114,8 +122,20 @@ export function Agenda({ repositorio, alRegistrarSesion, dia }: PropsAgenda) {
   return (
     <Pantalla testID="pantalla-agenda">
       <Titulo>Agenda de hoy</Titulo>
+      <Text style={estilos.fecha} maxFontSizeMultiplier={ESCALA_FUENTE_MAXIMA} testID="fecha-agenda">
+        {formatearDia(dia ?? new Date())}
+        {citas.length > 0 ? ` (${citas.length === 1 ? '1 cita' : `${citas.length} citas`})` : ''}
+      </Text>
       <MensajeError mensaje={error} />
-      {citas.length === 0 ? <Parrafo>No hay citas para hoy.</Parrafo> : null}
+      {citas.length === 0 ? (
+        <>
+          <Parrafo>No hay citas para hoy.</Parrafo>
+          <Parrafo>Para agendar una, abre un paciente y pulsa «Agendar cita».</Parrafo>
+          {alIrAPacientes !== undefined ? (
+            <BotonSecundario titulo="Ir a pacientes" onPress={alIrAPacientes} testID="agenda-ir-pacientes" />
+          ) : null}
+        </>
+      ) : null}
       {citas.map((item) => {
         const tieneTelefono = construirEnlaceConfirmacionWhatsApp(
           item.apoderado?.telefono,
@@ -168,6 +188,7 @@ export function Agenda({ repositorio, alRegistrarSesion, dia }: PropsAgenda) {
 
 const estilos = StyleSheet.create({
   aviso: { ...tipografia.auxiliar, color: colores.textoSecundario },
+  fecha: { ...tipografia.cuerpo, color: colores.textoSecundario },
   hora: { ...tipografia.cuerpoDestacado, color: colores.texto },
   chips: { flexDirection: 'row', flexWrap: 'wrap', gap: espaciado.s },
   chipTactil: {

@@ -85,6 +85,10 @@ function Ficha({
   );
 }
 
+function nombreApoderado(paciente: Paciente, apoderados: Apoderado[]): string | null {
+  return apoderados.find((a) => a.id === paciente.apoderado_id)?.nombre ?? null;
+}
+
 export function Pacientes(props: PropsPacientes) {
   const { repositorio } = props;
   const [pacientes, setPacientes] = useState<Paciente[]>([]);
@@ -130,7 +134,12 @@ export function Pacientes(props: PropsPacientes) {
       />
       <BotonPrimario titulo="Nuevo paciente" onPress={props.alNuevoPaciente} />
       {visibles.length === 0 ? (
-        <Parrafo>{consulta.trim().length > 0 ? TEXTO_SIN_RESULTADOS : 'Aún no hay pacientes.'}</Parrafo>
+        <>
+          <Parrafo>{consulta.trim().length > 0 ? TEXTO_SIN_RESULTADOS : 'Aún no hay pacientes.'}</Parrafo>
+          {consulta.trim().length === 0 ? (
+            <Parrafo>Pulsa «Nuevo paciente» para crear la primera ficha.</Parrafo>
+          ) : null}
+        </>
       ) : (
         visibles.map((p) => (
           <Tarjeta
@@ -142,6 +151,14 @@ export function Pacientes(props: PropsPacientes) {
             <Text style={{ ...tipografia.cuerpoDestacado, color: colores.texto }} maxFontSizeMultiplier={ESCALA_FUENTE_MAXIMA}>
               {p.nombre}
             </Text>
+            {nombreApoderado(p, apoderados) !== null ? (
+              <Text
+                style={{ ...tipografia.auxiliar, color: colores.textoSecundario }}
+                maxFontSizeMultiplier={ESCALA_FUENTE_MAXIMA}
+              >
+                {`Apoderado: ${nombreApoderado(p, apoderados)}`}
+              </Text>
+            ) : null}
           </Tarjeta>
         ))
       )}

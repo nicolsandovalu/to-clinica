@@ -218,7 +218,8 @@ export class RepositorioSQLite implements IRepositorioClinico {
         }
       }
       if (sqlcipherOmitido) {
-        // Sin datos clínicos en el mensaje (CS-07).
+        // Sin datos clínicos en el mensaje (CS-07). Aviso único solo de desarrollo (Expo Go).
+        // eslint-disable-next-line no-console
         console.warn('Expo Go: SQLCipher no disponible, usando SQLite estándar (solo desarrollo).');
       } else {
         try {

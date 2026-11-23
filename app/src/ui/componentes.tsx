@@ -54,6 +54,8 @@ interface PropsBoton {
   readonly deshabilitado?: boolean;
   /** Muestra un indicador de progreso y bloquea el botón. */
   readonly cargando?: boolean;
+  /** Para pestañas de navegación: indica a los lectores de pantalla cuál está activa. */
+  readonly seleccionado?: boolean;
   readonly style?: StyleProp<ViewStyle>;
   readonly testID?: string;
 }
@@ -73,7 +75,11 @@ function Boton({ variante, ...props }: PropsBoton & { variante: 'primario' | 'se
       accessibilityRole="button"
       accessibilityLabel={props.accessibilityLabel ?? props.titulo}
       accessibilityHint={props.accessibilityHint}
-      accessibilityState={{ disabled: inactivo, busy: props.cargando === true }}
+      accessibilityState={{
+        disabled: inactivo,
+        busy: props.cargando === true,
+        ...(props.seleccionado === undefined ? {} : { selected: props.seleccionado }),
+      }}
       testID={props.testID}
       style={({ pressed }) => [
         estilos.boton,

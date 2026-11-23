@@ -11,7 +11,7 @@ import type { GestorAcceso, EstadoAcceso } from '../modules/acceso/gestorAcceso'
 import type { MotorSync } from '../modules/sincronizacion/motorSync';
 import { conNotificacionDeCambios } from '../modules/sincronizacion/notificador';
 import { useSincronizacion } from '../modules/sincronizacion/useSincronizacion';
-import { BannerConexion, BotonSecundario } from '../ui/componentes';
+import { BannerConexion, BotonPrimario, BotonSecundario } from '../ui/componentes';
 import { colores, espaciado } from '../ui/tema';
 import { Agenda } from './Agenda';
 import { Borrador } from './Borrador';
@@ -56,6 +56,7 @@ export function Principal({ repositorio, motor, gestor, sesion, rutaInicial }: P
         <Agenda
           repositorio={repo}
           alRegistrarSesion={(citaId) => setRuta({ pantalla: 'registro', citaId })}
+          alIrAPacientes={irPacientes}
         />
       );
       break;
@@ -109,6 +110,7 @@ export function Principal({ repositorio, motor, gestor, sesion, rutaInicial }: P
       );
       break;
   }
+  const seccion = seccionDe(ruta);
   return pantalla(contenido);
 
   function pantalla(cuerpo: React.ReactNode) {
@@ -119,12 +121,12 @@ export function Principal({ repositorio, motor, gestor, sesion, rutaInicial }: P
         </View>
         <View style={estilos.cuerpo}>{cuerpo}</View>
         <View style={estilos.barra} accessibilityRole="tablist">
-          <BotonSecundario titulo="Agenda" onPress={irAgenda} style={estilos.opcion} testID="nav-agenda" />
-          <BotonSecundario titulo="Pacientes" onPress={irPacientes} style={estilos.opcion} testID="nav-pacientes" />
-          <BotonSecundario
+          <Pestana titulo="Agenda" activa={seccion === 'agenda'} onPress={irAgenda} testID="nav-agenda" />
+          <Pestana titulo="Pacientes" activa={seccion === 'pacientes'} onPress={irPacientes} testID="nav-pacientes" />
+          <Pestana
             titulo="Informe"
+            activa={seccion === 'informe'}
             onPress={() => setRuta({ pantalla: 'borrador' })}
-            style={estilos.opcion}
             testID="nav-informe"
           />
           <BotonSecundario
@@ -138,6 +140,38 @@ export function Principal({ repositorio, motor, gestor, sesion, rutaInicial }: P
       </View>
     );
   }
+}
+
+type Seccion = 'agenda' | 'pacientes' | 'informe';
+
+/** Pestaña de la barra inferior a la que pertenece cada pantalla (la activa se resalta). */
+export function seccionDe(ruta: Ruta): Seccion {
+  switch (ruta.pantalla) {
+    case 'agenda':
+    case 'registro':
+      return 'agenda';
+    case 'borrador':
+      return 'informe';
+    default:
+      return 'pacientes';
+  }
+}
+
+function Pestana({
+  titulo,
+  activa,
+  onPress,
+  testID,
+}: {
+  titulo: string;
+  activa: boolean;
+  onPress: () => void;
+  testID: string;
+}) {
+  const Boton = activa ? BotonPrimario : BotonSecundario;
+  return (
+    <Boton titulo={titulo} onPress={onPress} seleccionado={activa} style={estilos.opcion} testID={testID} />
+  );
 }
 
 const estilos = StyleSheet.create({

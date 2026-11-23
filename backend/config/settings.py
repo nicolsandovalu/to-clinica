@@ -4,7 +4,7 @@ entorno (CS-08); ver `.env.example`.
 """
 import os
 from pathlib import Path
-from urllib.parse import unquote, urlparse
+from urllib.parse import parse_qs, unquote, urlparse
 
 from django.core.exceptions import ImproperlyConfigured
 
@@ -62,18 +62,45 @@ TEMPLATES = [
 ]
 
 
+# Parámetros de la URL que se pasan a libpq. Neon exige TLS y a veces `channel_binding`.
+PARAMETROS_URL_PERMITIDOS = ("sslmode", "channel_binding")
+
+
+def configuracion_postgres(url):
+    """
+    Configuración de Django a partir de `DATABASE_URL` (Neon u otro PostgreSQL).
+
+    - TLS obligatorio: `sslmode=require` por defecto (Neon rechaza conexiones sin TLS).
+    - `CONN_HEALTH_CHECKS`: Neon suspende el cómputo sin uso; Django descarta la
+      conexión cerrada y abre otra en lugar de fallar.
+    - El host con `-pooler` usa PgBouncer en modo transacción, que no admite cursores
+      del lado del servidor.
+    """
+    partes = urlparse(url)
+    consulta = parse_qs(partes.query)
+    opciones = {"sslmode": "require"}
+    for clave in PARAMETROS_URL_PERMITIDOS:
+        if clave in consulta and consulta[clave]:
+            opciones[clave] = consulta[clave][0]
+    host = partes.hostname or ""
+    return {
+        "ENGINE": "django.db.backends.postgresql",
+        "NAME": partes.path.lstrip("/"),
+        "USER": unquote(partes.username or ""),
+        "PASSWORD": unquote(partes.password or ""),
+        "HOST": host,
+        "PORT": str(partes.port or ""),
+        "OPTIONS": opciones,
+        "CONN_MAX_AGE": 60,
+        "CONN_HEALTH_CHECKS": True,
+        "DISABLE_SERVER_SIDE_CURSORS": "-pooler" in host,
+    }
+
+
 def _base_de_datos():
     url = os.environ.get("DATABASE_URL", "")
     if url:
-        partes = urlparse(url)
-        return {
-            "ENGINE": "django.db.backends.postgresql",
-            "NAME": partes.path.lstrip("/"),
-            "USER": unquote(partes.username or ""),
-            "PASSWORD": unquote(partes.password or ""),
-            "HOST": partes.hostname or "",
-            "PORT": str(partes.port or ""),
-        }
+        return configuracion_postgres(url)
     if DEBUG:
         # Solo desarrollo y pruebas locales; producción exige PostgreSQL.
         return {"ENGINE": "django.db.backends.sqlite3", "NAME": BASE_DIR / "db.sqlite3"}
