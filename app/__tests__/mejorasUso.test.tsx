@@ -79,6 +79,8 @@ describe('Ficha del paciente: registrar sesión ahora', () => {
       />,
     );
     fireEvent.press(await screen.findByTestId(`paciente-${paciente.id}`));
+    // Esperar el resumen asíncrono de la ficha evita actualizaciones de estado tras terminar la prueba.
+    await screen.findByText('Sin sesiones registradas');
     fireEvent.press(await screen.findByTestId('ficha-registrar-ahora'));
     expect(registrarAhora).toHaveBeenCalledWith(paciente.id);
   });
@@ -98,6 +100,7 @@ describe('Ficha del paciente: registrar sesión ahora', () => {
     );
     fireEvent.press(await screen.findByTestId(`paciente-${paciente.id}`));
     await screen.findByText('Agendar cita');
+    await screen.findByText('Sin sesiones registradas');
     expect(screen.queryByTestId('ficha-registrar-ahora')).toBeNull();
   });
 });
