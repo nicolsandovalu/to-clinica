@@ -5,6 +5,7 @@
  */
 import React, { useMemo, useState } from 'react';
 import { StyleSheet, View } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import type { IRepositorioClinico } from '../data/repositorio';
 import type { GestorAcceso, EstadoAcceso } from '../modules/acceso/gestorAcceso';
@@ -39,6 +40,7 @@ export interface PropsPrincipal {
 
 export function Principal({ repositorio, motor, gestor, sesion, rutaInicial }: PropsPrincipal) {
   const [ruta, setRuta] = useState<Ruta>(rutaInicial ?? { pantalla: 'agenda' });
+  const margenes = useSafeAreaInsets();
   const sync = useSincronizacion(motor);
   const { notificarCambioLocal } = sync;
   const repo = useMemo(
@@ -67,6 +69,11 @@ export function Principal({ repositorio, motor, gestor, sesion, rutaInicial }: P
           alNuevoPaciente={() => setRuta({ pantalla: 'formPaciente' })}
           alEditar={(pacienteId) => setRuta({ pantalla: 'formPaciente', pacienteId })}
           alAgendar={(pacienteId) => setRuta({ pantalla: 'formCita', pacienteId })}
+          alRegistrarAhora={(pacienteId) => {
+            void repo
+              .crearCita({ paciente_id: pacienteId, fecha_hora: new Date().toISOString() })
+              .then((cita) => setRuta({ pantalla: 'registro', citaId: cita.id }));
+          }}
           alHistorial={(pacienteId) => setRuta({ pantalla: 'historial', pacienteId })}
           alBorrador={(pacienteId) => setRuta({ pantalla: 'borrador', pacienteId })}
         />
@@ -116,11 +123,14 @@ export function Principal({ repositorio, motor, gestor, sesion, rutaInicial }: P
   function pantalla(cuerpo: React.ReactNode) {
     return (
       <View style={estilos.raiz} testID="principal">
-        <View style={estilos.banner}>
+        <View style={[estilos.banner, { paddingTop: Math.max(margenes.top, espaciado.xxl) + espaciado.s }]}>
           <BannerConexion conectado={sync.conectado} pendientes={sync.pendientes} />
         </View>
         <View style={estilos.cuerpo}>{cuerpo}</View>
-        <View style={estilos.barra} accessibilityRole="tablist">
+        <View
+          style={[estilos.barra, { paddingBottom: espaciado.s + margenes.bottom }]}
+          accessibilityRole="tablist"
+        >
           <Pestana titulo="Agenda" activa={seccion === 'agenda'} onPress={irAgenda} testID="nav-agenda" />
           <Pestana titulo="Pacientes" activa={seccion === 'pacientes'} onPress={irPacientes} testID="nav-pacientes" />
           <Pestana
@@ -176,7 +186,7 @@ function Pestana({
 
 const estilos = StyleSheet.create({
   raiz: { flex: 1, backgroundColor: colores.fondo },
-  banner: { paddingTop: espaciado.xxl + espaciado.l, paddingHorizontal: espaciado.l },
+  banner: { paddingHorizontal: espaciado.l },
   cuerpo: { flex: 1 },
   barra: {
     flexDirection: 'row',

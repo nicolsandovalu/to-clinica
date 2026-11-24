@@ -23,6 +23,8 @@ export interface PropsPacientes {
   readonly alNuevoPaciente: () => void;
   readonly alEditar: (pacienteId: string) => void;
   readonly alAgendar: (pacienteId: string) => void;
+  /** Crea una cita ahora y abre el registro por voz (atajo desde la ficha). */
+  readonly alRegistrarAhora?: (pacienteId: string) => void;
   readonly alHistorial: (pacienteId: string) => void;
   readonly alBorrador: (pacienteId: string) => void;
 }
@@ -77,10 +79,17 @@ function Ficha({
           ))}
         </Tarjeta>
       )}
-      <BotonPrimario titulo="Agendar cita" onPress={() => props.alAgendar(paciente.id)} />
+      {props.alRegistrarAhora !== undefined ? (
+        <BotonPrimario
+          titulo="Registrar sesión ahora (dictar)"
+          onPress={() => props.alRegistrarAhora?.(paciente.id)}
+          testID="ficha-registrar-ahora"
+        />
+      ) : null}
+      <BotonSecundario titulo="Agendar cita" onPress={() => props.alAgendar(paciente.id)} />
       <BotonSecundario titulo="Editar paciente" onPress={() => props.alEditar(paciente.id)} />
       <BotonSecundario titulo="Ver historial" onPress={() => props.alHistorial(paciente.id)} />
-      <BotonSecundario titulo="Ver borrador" onPress={() => props.alBorrador(paciente.id)} />
+      <BotonSecundario titulo="Borrador de informe" onPress={() => props.alBorrador(paciente.id)} />
     </Pantalla>
   );
 }

@@ -1,5 +1,6 @@
 import { StatusBar } from 'expo-status-bar';
 import React, { useState } from 'react';
+import { SafeAreaProvider } from 'react-native-safe-area-context';
 
 import { almacenSeguroExpo, crearRepositorioSQLite } from './src/data/fabrica';
 import type { IRepositorioClinico } from './src/data/repositorio';
@@ -51,11 +52,13 @@ function ContenidoDesbloqueado({ servicios }: { servicios: Servicios }) {
 export default function App() {
   const [servicios] = useState(crearServicios);
   return (
-    <ProveedorAcceso gestor={servicios.gestor}>
-      <StatusBar style="dark" />
-      <CompuertaAcceso>
-        <ContenidoDesbloqueado servicios={servicios} />
-      </CompuertaAcceso>
-    </ProveedorAcceso>
+    <SafeAreaProvider>
+      <ProveedorAcceso gestor={servicios.gestor}>
+        <StatusBar style="dark" />
+        <CompuertaAcceso>
+          <ContenidoDesbloqueado servicios={servicios} />
+        </CompuertaAcceso>
+      </ProveedorAcceso>
+    </SafeAreaProvider>
   );
 }

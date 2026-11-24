@@ -5,7 +5,7 @@
  * - los estados se comunican con ícono + texto, nunca solo con color.
  * Los íconos son glifos decorativos ocultos al lector de pantalla: el texto lleva el significado.
  */
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import {
   ActivityIndicator,
   Pressable,
@@ -251,7 +251,25 @@ export function mensajeBannerConexion({ conectado, pendientes }: PropsBannerCone
   return pendientes > 0 ? `Sincronizando ${cambios}…` : 'Todo sincronizado.';
 }
 
+/** Tiempo que se muestra «Todo sincronizado» antes de ocultarse solo. */
+export const TIEMPO_AVISO_SINCRONIZADO_MS = 4000;
+
+/** Aviso verde que desaparece solo; se vuelve a montar cada vez que todo queda al día. */
+function AvisoAlDia({ children }: { children: React.ReactNode }) {
+  const [oculto, setOculto] = useState(false);
+  useEffect(() => {
+    const temporizador = setTimeout(() => setOculto(true), TIEMPO_AVISO_SINCRONIZADO_MS);
+    return () => clearTimeout(temporizador);
+  }, []);
+  return oculto ? null : <>{children}</>;
+}
+
 export function BannerConexion(props: PropsBannerConexion) {
+  const aviso = <AvisoConexion {...props} />;
+  return props.conectado && props.pendientes === 0 ? <AvisoAlDia>{aviso}</AvisoAlDia> : aviso;
+}
+
+function AvisoConexion(props: PropsBannerConexion) {
   const variante: VarianteSemantica = !props.conectado
     ? 'advertencia'
     : props.pendientes > 0

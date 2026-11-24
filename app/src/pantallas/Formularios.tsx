@@ -8,18 +8,17 @@ import {
   combinarFechaHora,
   guardarPacienteConApoderado,
 } from '../modules/pacientes-agenda/servicio';
-import { normalizarYValidarTelefonoChileno } from '../modules/pacientes-agenda/validaciones';
+import { normalizarFecha, normalizarYValidarTelefonoChileno } from '../modules/pacientes-agenda/validaciones';
 import { BotonPrimario, BotonSecundario, CampoTexto } from '../ui/componentes';
 import { MensajeError, Pantalla, Titulo } from './base';
 
 export const MENSAJES_FORMULARIO = {
   nombreObligatorio: 'Ingresa el nombre del paciente.',
-  fechaNacimiento: 'Usa el formato AAAA-MM-DD.',
-  fechaHora: 'Ingresa fecha (AAAA-MM-DD) y hora (HH:MM) válidas.',
+  fechaNacimiento: 'Escribe una fecha real, por ejemplo 19-11-1996.',
+  fechaHora: 'Ingresa una fecha (por ejemplo 25-11-2026) y una hora (HH:MM) válidas.',
   guardar: 'No se pudo guardar. Inténtalo de nuevo.',
 } as const;
 
-const PATRON_FECHA = /^\d{4}-\d{2}-\d{2}$/;
 
 function dos(n: number): string {
   return String(n).padStart(2, '0');
@@ -82,7 +81,7 @@ export function FormularioPaciente({
     const nuevos = {
       nombre: nombre.trim().length === 0 ? MENSAJES_FORMULARIO.nombreObligatorio : null,
       nacimiento:
-        nacimiento.trim().length > 0 && !PATRON_FECHA.test(nacimiento.trim())
+        nacimiento.trim().length > 0 && normalizarFecha(nacimiento) === null
           ? MENSAJES_FORMULARIO.fechaNacimiento
           : null,
       telefono: tel.error,
@@ -91,7 +90,7 @@ export function FormularioPaciente({
     if (Object.values(nuevos).some((e) => e !== null)) return;
     const datos: DatosFormularioPaciente = {
       nombre,
-      fecha_nacimiento: nacimiento.trim().length > 0 ? nacimiento.trim() : null,
+      fecha_nacimiento: nacimiento.trim().length > 0 ? normalizarFecha(nacimiento) : null,
       antecedentes,
       motivo_consulta: motivo,
       apoderado_nombre: apoderado,
@@ -128,7 +127,7 @@ export function FormularioPaciente({
       <CampoTexto etiqueta="Nombre del paciente" value={nombre} onChangeText={setNombre} error={errores.nombre} />
       <CampoTexto
         etiqueta="Fecha de nacimiento (opcional)"
-        ayuda="Formato AAAA-MM-DD"
+        ayuda="Día-mes-año, por ejemplo 19-11-1996"
         value={nacimiento}
         onChangeText={setNacimiento}
         error={errores.nacimiento}
@@ -170,8 +169,14 @@ export interface PropsFormularioCita {
   readonly alVolver: () => void;
 }
 
+function fechaDeHoy(): string {
+  const h = new Date();
+  const dos = (n: number) => String(n).padStart(2, '0');
+  return `${dos(h.getDate())}-${dos(h.getMonth() + 1)}-${h.getFullYear()}`;
+}
+
 export function FormularioCita({ repositorio, pacienteId, citaId, alTerminar, alVolver }: PropsFormularioCita) {
-  const [fecha, setFecha] = useState('');
+  const [fecha, setFecha] = useState(fechaDeHoy);
   const [hora, setHora] = useState('');
   const [error, setError] = useState<string | null>(null);
   const [errorGeneral, setErrorGeneral] = useState<string | null>(null);
@@ -197,7 +202,7 @@ export function FormularioCita({ repositorio, pacienteId, citaId, alTerminar, al
   }, [repositorio, citaId]);
 
   const guardar = async () => {
-    const iso = combinarFechaHora(fecha, hora);
+    const iso = combinarFechaHora(normalizarFecha(fecha) ?? fecha, hora);
     if (iso === null) {
       setError(MENSAJES_FORMULARIO.fechaHora);
       return;
@@ -235,7 +240,7 @@ export function FormularioCita({ repositorio, pacienteId, citaId, alTerminar, al
       <MensajeError mensaje={errorGeneral} />
       <CampoTexto
         etiqueta="Fecha"
-        ayuda="Formato AAAA-MM-DD"
+        ayuda="Día-mes-año, por ejemplo 19-11-1996"
         value={fecha}
         onChangeText={setFecha}
         keyboardType="numbers-and-punctuation"

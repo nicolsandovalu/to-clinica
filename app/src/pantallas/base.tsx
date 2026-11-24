@@ -1,19 +1,22 @@
 /** Piezas de maquetación compartidas por las pantallas. */
 import React from 'react';
-import { ScrollView, StyleSheet, Text, View } from 'react-native';
+import { KeyboardAvoidingView, ScrollView, StyleSheet, Text, View } from 'react-native';
 
 import { ESCALA_FUENTE_MAXIMA, colores, espaciado, tipografia } from '../ui/tema';
 
 export function Pantalla({ children, testID }: { children: React.ReactNode; testID?: string }) {
   return (
-    <ScrollView
-      style={estilos.fondo}
-      contentContainerStyle={estilos.contenido}
-      keyboardShouldPersistTaps="handled"
-      testID={testID}
-    >
-      {children}
-    </ScrollView>
+    <KeyboardAvoidingView style={estilos.fondo} behavior="padding">
+      <ScrollView
+        style={estilos.fondo}
+        contentContainerStyle={estilos.contenido}
+        keyboardShouldPersistTaps="handled"
+        automaticallyAdjustKeyboardInsets
+        testID={testID}
+      >
+        {children}
+      </ScrollView>
+    </KeyboardAvoidingView>
   );
 }
 
