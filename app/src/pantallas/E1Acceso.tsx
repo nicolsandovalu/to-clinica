@@ -1,9 +1,9 @@
 /** E1 — Acceso: inicio de sesión y pantalla de bloqueo. Ninguna muestra datos clínicos. */
 import React, { useEffect, useState } from 'react';
-import { ActivityIndicator } from 'react-native';
+import { ActivityIndicator, StyleSheet, Text, View } from 'react-native';
 
 import { BotonPrimario, BotonSecundario, CampoTexto } from '../ui/componentes';
-import { colores } from '../ui/tema';
+import { ESCALA_FUENTE_MAXIMA, colores, espaciado, tipografia } from '../ui/tema';
 import { MensajeError, Pantalla, Parrafo, Titulo } from './base';
 
 interface PropsInicioSesion {
@@ -17,6 +17,9 @@ export function E1Acceso({ ocupada, error, alIniciarSesion }: PropsInicioSesion)
   const [password, setPassword] = useState('');
   return (
     <Pantalla testID="pantalla-acceso">
+      <View style={estilos.marca} accessibilityElementsHidden importantForAccessibility="no-hide-descendants">
+        <Text style={estilos.glifoMarca}>●</Text>
+      </View>
       <Titulo>TO Clínica</Titulo>
       <Parrafo>Inicia sesión para abrir tu agenda.</Parrafo>
       <CampoTexto
@@ -45,6 +48,11 @@ export function E1Acceso({ ocupada, error, alIniciarSesion }: PropsInicioSesion)
         testID="campo-password"
       />
       <MensajeError mensaje={error} />
+      {ocupada ? (
+        <Text style={estilos.espera} accessibilityLiveRegion="polite" maxFontSizeMultiplier={ESCALA_FUENTE_MAXIMA}>
+          Conectando con el servidor… si estuvo inactivo, puede tardar hasta un minuto.
+        </Text>
+      ) : null}
       <BotonPrimario
         titulo="Iniciar sesión"
         onPress={() => alIniciarSesion(email, password)}
@@ -54,6 +62,19 @@ export function E1Acceso({ ocupada, error, alIniciarSesion }: PropsInicioSesion)
     </Pantalla>
   );
 }
+
+const estilos = StyleSheet.create({
+  marca: {
+    width: 56,
+    height: 56,
+    borderRadius: 28,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: colores.avatarFondo,
+  },
+  glifoMarca: { fontSize: 24, color: colores.primario },
+  espera: { ...tipografia.auxiliar, color: colores.textoSecundario, marginBottom: -espaciado.s },
+});
 
 interface PropsBloqueo {
   readonly ocupada: boolean;

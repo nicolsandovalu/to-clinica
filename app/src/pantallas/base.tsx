@@ -1,15 +1,21 @@
 /** Piezas de maquetación compartidas por las pantallas. */
-import React from 'react';
+import React, { createContext, useContext } from 'react';
 import { KeyboardAvoidingView, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { ESCALA_FUENTE_MAXIMA, colores, espaciado, tipografia } from '../ui/tema';
 
+/** `true` dentro de la navegación principal, donde el banner superior ya respeta el margen del sistema. */
+export const ContextoDentroDePrincipal = createContext(false);
+
 export function Pantalla({ children, testID }: { children: React.ReactNode; testID?: string }) {
+  const dentro = useContext(ContextoDentroDePrincipal);
+  const margenes = useSafeAreaInsets();
   return (
     <KeyboardAvoidingView style={estilos.fondo} behavior="padding">
       <ScrollView
         style={estilos.fondo}
-        contentContainerStyle={estilos.contenido}
+        contentContainerStyle={[estilos.contenido, { paddingTop: dentro ? espaciado.l : margenes.top + espaciado.xxl }]}
         keyboardShouldPersistTaps="handled"
         automaticallyAdjustKeyboardInsets
         testID={testID}
@@ -73,7 +79,6 @@ const estilos = StyleSheet.create({
   contenido: {
     flexGrow: 1,
     padding: espaciado.xl,
-    paddingTop: espaciado.xxl * 2,
     gap: espaciado.l,
   },
   titulo: { ...tipografia.titulo, color: colores.texto },

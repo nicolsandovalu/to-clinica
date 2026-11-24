@@ -15,6 +15,9 @@ export const MENSAJE_LOGIN_GENERICO = 'Correo o contraseña incorrectos.';
 /** Sincronización y restauración toleran el arranque en frío del servidor (Render). */
 export const TIEMPO_MAXIMO_SYNC_MS = 120_000;
 
+/** El inicio de sesión también espera el arranque en frío del servidor (~50 s en Render gratis). */
+export const TIEMPO_MAXIMO_LOGIN_MS = 60_000;
+
 export type TipoErrorApi = 'credenciales' | 'limite' | 'no_autorizado' | 'red' | 'servidor';
 
 export class ErrorApi extends Error {
@@ -121,7 +124,10 @@ export function crearClienteApi(opciones: OpcionesClienteApi): ClienteApi {
 
   return {
     async login(email, password) {
-      const respuesta = await pedir('POST', '/api/cuentas/login/', { cuerpo: { email, password } });
+      const respuesta = await pedir('POST', '/api/cuentas/login/', {
+        cuerpo: { email, password },
+        tiempoMaximoMs: TIEMPO_MAXIMO_LOGIN_MS,
+      });
       if (respuesta.status === 429) throw new ErrorApi('limite', 429);
       if (respuesta.status >= 400 && respuesta.status < 500) {
         throw new ErrorApi('credenciales', respuesta.status);

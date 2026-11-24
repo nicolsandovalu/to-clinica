@@ -13,6 +13,10 @@ export const colores = {
   texto: '#1F2937',
   textoSecundario: '#4B5563',
   borde: '#6B7280',
+  /** Borde decorativo de tarjetas (no delimita controles). */
+  bordeSuave: '#E2E8F0',
+  avatarFondo: '#CFE8EF',
+  avatarTexto: '#0E4557',
   deshabilitadoFondo: '#E5E7EB',
   deshabilitadoTexto: '#4B5563',
   foco: '#1D4ED8',
@@ -54,7 +58,7 @@ export const ESCALA_FUENTE_MAXIMA = 2;
 
 export const espaciado = { xs: 4, s: 8, m: 12, l: 16, xl: 24, xxl: 32 } as const;
 
-export const radios = { s: 6, m: 10, l: 16, completo: 999 } as const;
+export const radios = { s: 8, m: 12, l: 16, completo: 999 } as const;
 
 /** Área táctil mínima (WCAG 2.5.8 exige 24; se usa 48 por recomendación de plataforma). */
 export const AREA_TACTIL_MINIMA = 48;
@@ -92,5 +96,6 @@ export const PARES_CONTRASTE: readonly (readonly [string, string])[] = [
   [colores.error, colores.fondo],
   [colores.error, colores.superficie],
   [colores.foco, colores.fondo],
+  [colores.avatarTexto, colores.avatarFondo],
   ...Object.values(coloresSemanticos).map(({ texto, fondo }) => [texto, fondo] as const),
 ];

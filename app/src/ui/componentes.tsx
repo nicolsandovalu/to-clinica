@@ -43,6 +43,31 @@ function Icono({ glifo, color }: { glifo: string; color: string }) {
   );
 }
 
+// ---------- Avatar con iniciales ----------
+
+/** Iniciales (máx. 2) de un nombre completo; «?» si no hay letras. */
+export function iniciales(nombre: string): string {
+  const partes = nombre.trim().split(/\s+/).filter((p) => p.length > 0);
+  if (partes.length === 0) return '?';
+  const primera = partes[0]?.charAt(0) ?? '';
+  const ultima = partes.length > 1 ? (partes[partes.length - 1]?.charAt(0) ?? '') : '';
+  return `${primera}${ultima}`.toUpperCase();
+}
+
+export function Avatar({ nombre, tamano = 40 }: { nombre: string; tamano?: number }) {
+  return (
+    <View
+      style={[estilos.avatar, { width: tamano, height: tamano, borderRadius: tamano / 2 }]}
+      accessibilityElementsHidden
+      importantForAccessibility="no-hide-descendants"
+    >
+      <Text style={[estilos.textoAvatar, { fontSize: tamano * 0.38 }]} maxFontSizeMultiplier={ESCALA_FUENTE_MAXIMA}>
+        {iniciales(nombre)}
+      </Text>
+    </View>
+  );
+}
+
 // ---------- Botones ----------
 
 interface PropsBoton {
@@ -306,7 +331,7 @@ const estilos = StyleSheet.create({
     paddingHorizontal: espaciado.xl,
     paddingVertical: espaciado.m,
     borderRadius: radios.m,
-    borderWidth: 2,
+    borderWidth: 1,
   },
   botonPrimario: { backgroundColor: colores.primario, borderColor: colores.primario },
   botonPrimarioPresionado: {
@@ -320,6 +345,8 @@ const estilos = StyleSheet.create({
     borderColor: colores.deshabilitadoFondo,
   },
   textoBoton: { ...tipografia.cuerpoDestacado, textAlign: 'center' },
+  avatar: { alignItems: 'center', justifyContent: 'center', backgroundColor: colores.avatarFondo },
+  textoAvatar: { fontWeight: '700', color: colores.avatarTexto },
   campo: { gap: espaciado.xs },
   etiqueta: { ...tipografia.etiqueta, color: colores.texto },
   entrada: {
@@ -344,9 +371,14 @@ const estilos = StyleSheet.create({
     padding: espaciado.l,
     borderRadius: radios.l,
     borderWidth: 1,
-    borderColor: colores.borde,
+    borderColor: colores.bordeSuave,
     backgroundColor: colores.superficie,
     gap: espaciado.s,
+    elevation: 1,
+    shadowColor: '#0F172A',
+    shadowOpacity: 0.06,
+    shadowRadius: 6,
+    shadowOffset: { width: 0, height: 2 },
   },
   tarjetaPresionada: { backgroundColor: colores.infoFondo },
   chip: {
@@ -362,11 +394,12 @@ const estilos = StyleSheet.create({
   textoChip: { ...tipografia.etiqueta },
   banner: {
     flexDirection: 'row',
-    alignItems: 'flex-start',
+    alignItems: 'center',
     gap: espaciado.s,
-    paddingHorizontal: espaciado.l,
-    paddingVertical: espaciado.m,
-    borderBottomWidth: 1,
+    paddingHorizontal: espaciado.m,
+    paddingVertical: espaciado.s,
+    borderRadius: radios.m,
+    borderWidth: 1,
   },
   textoBanner: { ...tipografia.auxiliar, flex: 1 },
 });

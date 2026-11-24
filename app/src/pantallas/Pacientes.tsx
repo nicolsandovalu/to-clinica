@@ -1,6 +1,6 @@
 /** E3 — Pacientes: lista activa con buscador y ficha con resumen de la última sesión. */
 import React, { useEffect, useState } from 'react';
-import { Text } from 'react-native';
+import { Text, View } from 'react-native';
 
 import type { IRepositorioClinico } from '../data/repositorio';
 import type { Apoderado, Paciente } from '../data/tipos';
@@ -10,7 +10,7 @@ import {
   obtenerResumenUltimaSesion,
 } from '../modules/pacientes-agenda/servicio';
 import { formatearFechaHoraCita } from '../modules/pacientes-agenda/whatsapp';
-import { BotonPrimario, BotonSecundario, CampoTexto, Tarjeta } from '../ui/componentes';
+import { Avatar, BotonPrimario, BotonSecundario, CampoTexto, Tarjeta } from '../ui/componentes';
 import { ESCALA_FUENTE_MAXIMA, colores, tipografia } from '../ui/tema';
 import { MensajeError, Pantalla, Parrafo, Subtitulo, Titulo } from './base';
 
@@ -60,8 +60,13 @@ function Ficha({
   return (
     <Pantalla testID="ficha-paciente">
       <BotonSecundario titulo="Volver a pacientes" onPress={alVolver} />
-      <Titulo>{paciente.nombre}</Titulo>
-      {apoderado !== null ? <Parrafo>{`Apoderado: ${apoderado.nombre}`}</Parrafo> : null}
+      <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
+        <Avatar nombre={paciente.nombre} tamano={56} />
+        <View style={{ flex: 1 }}>
+          <Titulo>{paciente.nombre}</Titulo>
+          {apoderado !== null ? <Parrafo>{`Apoderado: ${apoderado.nombre}`}</Parrafo> : null}
+        </View>
+      </View>
       <MensajeError mensaje={error} />
       <Subtitulo>Resumen de última sesión</Subtitulo>
       {resumen === undefined ? null : resumen === null ? (
@@ -157,17 +162,22 @@ export function Pacientes(props: PropsPacientes) {
             onPress={() => setSeleccionado(p.id)}
             accessibilityLabel={`Abrir ficha de ${p.nombre}`}
           >
-            <Text style={{ ...tipografia.cuerpoDestacado, color: colores.texto }} maxFontSizeMultiplier={ESCALA_FUENTE_MAXIMA}>
-              {p.nombre}
-            </Text>
-            {nombreApoderado(p, apoderados) !== null ? (
-              <Text
-                style={{ ...tipografia.auxiliar, color: colores.textoSecundario }}
-                maxFontSizeMultiplier={ESCALA_FUENTE_MAXIMA}
-              >
-                {`Apoderado: ${nombreApoderado(p, apoderados)}`}
-              </Text>
-            ) : null}
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
+              <Avatar nombre={p.nombre} />
+              <View style={{ flex: 1 }}>
+                <Text style={{ ...tipografia.cuerpoDestacado, color: colores.texto }} maxFontSizeMultiplier={ESCALA_FUENTE_MAXIMA}>
+                  {p.nombre}
+                </Text>
+                {nombreApoderado(p, apoderados) !== null ? (
+                  <Text
+                    style={{ ...tipografia.auxiliar, color: colores.textoSecundario }}
+                    maxFontSizeMultiplier={ESCALA_FUENTE_MAXIMA}
+                  >
+                    {`Apoderado: ${nombreApoderado(p, apoderados)}`}
+                  </Text>
+                ) : null}
+              </View>
+            </View>
           </Tarjeta>
         ))
       )}

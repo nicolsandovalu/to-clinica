@@ -4,7 +4,7 @@
  * El banner global muestra el estado de sincronización (`useSincronizacion`).
  */
 import React, { useMemo, useState } from 'react';
-import { StyleSheet, View } from 'react-native';
+import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import type { IRepositorioClinico } from '../data/repositorio';
@@ -12,10 +12,11 @@ import type { GestorAcceso, EstadoAcceso } from '../modules/acceso/gestorAcceso'
 import type { MotorSync } from '../modules/sincronizacion/motorSync';
 import { conNotificacionDeCambios } from '../modules/sincronizacion/notificador';
 import { useSincronizacion } from '../modules/sincronizacion/useSincronizacion';
-import { BannerConexion, BotonPrimario, BotonSecundario } from '../ui/componentes';
-import { colores, espaciado } from '../ui/tema';
+import { BannerConexion } from '../ui/componentes';
+import { AREA_TACTIL_MINIMA, ESCALA_FUENTE_MAXIMA, colores, espaciado, radios } from '../ui/tema';
 import { Agenda } from './Agenda';
 import { Borrador } from './Borrador';
+import { ContextoDentroDePrincipal } from './base';
 import { FormularioCita, FormularioPaciente } from './Formularios';
 import { Historial } from './Historial';
 import { Pacientes } from './Pacientes';
@@ -122,6 +123,7 @@ export function Principal({ repositorio, motor, gestor, sesion, rutaInicial }: P
 
   function pantalla(cuerpo: React.ReactNode) {
     return (
+      <ContextoDentroDePrincipal.Provider value>
       <View style={estilos.raiz} testID="principal">
         <View style={[estilos.banner, { paddingTop: Math.max(margenes.top, espaciado.xxl) + espaciado.s }]}>
           <BannerConexion conectado={sync.conectado} pendientes={sync.pendientes} />
@@ -131,23 +133,32 @@ export function Principal({ repositorio, motor, gestor, sesion, rutaInicial }: P
           style={[estilos.barra, { paddingBottom: espaciado.s + margenes.bottom }]}
           accessibilityRole="tablist"
         >
-          <Pestana titulo="Agenda" activa={seccion === 'agenda'} onPress={irAgenda} testID="nav-agenda" />
-          <Pestana titulo="Pacientes" activa={seccion === 'pacientes'} onPress={irPacientes} testID="nav-pacientes" />
+          <Pestana titulo="Agenda" glifo="▦" activa={seccion === 'agenda'} onPress={irAgenda} testID="nav-agenda" />
+          <Pestana
+            titulo="Pacientes"
+            glifo="☺"
+            activa={seccion === 'pacientes'}
+            onPress={irPacientes}
+            testID="nav-pacientes"
+          />
           <Pestana
             titulo="Informe"
+            glifo="▤"
             activa={seccion === 'informe'}
             onPress={() => setRuta({ pantalla: 'borrador' })}
             testID="nav-informe"
           />
-          <BotonSecundario
+          <Pestana
             titulo="Salir"
             accessibilityLabel="Cerrar sesión"
+            glifo="⏻"
+            activa={false}
             onPress={() => void gestor.cerrarSesion()}
-            style={estilos.opcion}
             testID="nav-salir"
           />
         </View>
       </View>
+      </ContextoDentroDePrincipal.Provider>
     );
   }
 }
@@ -169,18 +180,46 @@ export function seccionDe(ruta: Ruta): Seccion {
 
 function Pestana({
   titulo,
+  glifo,
   activa,
   onPress,
   testID,
+  accessibilityLabel,
 }: {
   titulo: string;
+  glifo: string;
   activa: boolean;
   onPress: () => void;
   testID: string;
+  accessibilityLabel?: string;
 }) {
-  const Boton = activa ? BotonPrimario : BotonSecundario;
   return (
-    <Boton titulo={titulo} onPress={onPress} seleccionado={activa} style={estilos.opcion} testID={testID} />
+    <Pressable
+      onPress={onPress}
+      accessibilityRole="button"
+      accessibilityLabel={accessibilityLabel ?? titulo}
+      accessibilityState={{ selected: activa }}
+      testID={testID}
+      style={estilos.opcion}
+    >
+      <View style={[estilos.icono, activa && estilos.iconoActivo]}>
+        <Text
+          style={[estilos.glifo, activa && estilos.glifoActivo]}
+          accessibilityElementsHidden
+          importantForAccessibility="no"
+          maxFontSizeMultiplier={ESCALA_FUENTE_MAXIMA}
+        >
+          {glifo}
+        </Text>
+      </View>
+      <Text
+        style={[estilos.etiquetaPestana, activa && estilos.etiquetaActiva]}
+        numberOfLines={1}
+        maxFontSizeMultiplier={1.3}
+      >
+        {titulo}
+      </Text>
+    </Pressable>
   );
 }
 
@@ -190,11 +229,23 @@ const estilos = StyleSheet.create({
   cuerpo: { flex: 1 },
   barra: {
     flexDirection: 'row',
-    gap: espaciado.s,
-    padding: espaciado.s,
+    paddingTop: espaciado.s,
+    paddingHorizontal: espaciado.s,
     borderTopWidth: 1,
-    borderTopColor: colores.borde,
+    borderTopColor: colores.bordeSuave,
     backgroundColor: colores.superficie,
   },
-  opcion: { flex: 1, paddingHorizontal: espaciado.xs },
+  opcion: { flex: 1, minHeight: AREA_TACTIL_MINIMA, alignItems: 'center', gap: 2 },
+  icono: {
+    width: 56,
+    height: 30,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderRadius: radios.completo,
+  },
+  iconoActivo: { backgroundColor: colores.avatarFondo },
+  glifo: { fontSize: 18, lineHeight: 22, color: colores.textoSecundario },
+  glifoActivo: { color: colores.primario },
+  etiquetaPestana: { fontSize: 12, lineHeight: 16, fontWeight: '500', color: colores.textoSecundario },
+  etiquetaActiva: { fontWeight: '700', color: colores.primario },
 });

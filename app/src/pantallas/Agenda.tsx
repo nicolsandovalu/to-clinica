@@ -12,6 +12,7 @@ import {
 import {
   BotonPrimario,
   BotonSecundario,
+  Avatar,
   CHIPS_ESTADO_CITA,
   ChipEstado,
   Tarjeta,
@@ -144,9 +145,12 @@ export function Agenda({ repositorio, alRegistrarSesion, dia, alIrAPacientes }: 
         ) !== null;
         return (
           <Tarjeta key={item.cita.id} testID={`cita-${item.cita.id}`}>
-            <Text style={estilos.hora} maxFontSizeMultiplier={ESCALA_FUENTE_MAXIMA}>
-              {horaLocal(item.cita.fecha_hora)} · {item.paciente.nombre}
-            </Text>
+            <View style={estilos.encabezadoCita}>
+              <Avatar nombre={item.paciente.nombre} />
+              <Text style={[estilos.hora, estilos.flexible]} maxFontSizeMultiplier={ESCALA_FUENTE_MAXIMA}>
+                {horaLocal(item.cita.fecha_hora)} · {item.paciente.nombre}
+              </Text>
+            </View>
             <SelectorEstado
               actual={item.cita.estado}
               nombrePaciente={item.paciente.nombre}
@@ -189,7 +193,9 @@ export function Agenda({ repositorio, alRegistrarSesion, dia, alIrAPacientes }: 
 const estilos = StyleSheet.create({
   aviso: { ...tipografia.auxiliar, color: colores.textoSecundario },
   fecha: { ...tipografia.cuerpo, color: colores.textoSecundario },
-  hora: { ...tipografia.cuerpoDestacado, color: colores.texto },
+  hora: { ...tipografia.subtitulo, color: colores.texto },
+  encabezadoCita: { flexDirection: 'row', alignItems: 'center', gap: espaciado.m },
+  flexible: { flex: 1 },
   chips: { flexDirection: 'row', flexWrap: 'wrap', gap: espaciado.s },
   chipTactil: {
     minHeight: AREA_TACTIL_MINIMA,

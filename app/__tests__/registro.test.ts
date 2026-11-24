@@ -216,6 +216,14 @@ describe('dictado on-device y fallback sin voz', () => {
     controlador.detener();
     expect(motor.detenciones).toBe(1);
     expect(controlador.obtenerEstado().escuchando).toBe(false);
+    // Los oyentes siguen hasta que el reconocedor avise `fin`: el texto final llega después de detener.
+    expect(motor.oyentes).not.toBeNull();
+    motor.oyentes?.resultado('y la recibió');
+    expect(textos).toEqual([
+      ['objetivos_cumplidos', 'lanzó la pelota'],
+      ['objetivos_cumplidos', 'y la recibió'],
+    ]);
+    motor.oyentes?.fin();
     expect(motor.oyentes).toBeNull();
   });
 
