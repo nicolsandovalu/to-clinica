@@ -36,3 +36,7 @@ coverage/
 .env
 .env.*
 !.env.example
+
+# Proyecto nativo generado (expo prebuild / run:android): EAS lo regenera
+/android
+/ios

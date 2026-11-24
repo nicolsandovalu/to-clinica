@@ -47,6 +47,12 @@
       ],
       "expo-sharing",
       "expo-speech-recognition"
-    ]
+    ],
+    "extra": {
+      "eas": {
+        "projectId": "6f69827a-0d65-44e7-b00b-8778d47e966d"
+      }
+    },
+    "owner": "nicolettts-team"
   }
 }
